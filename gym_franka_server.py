@@ -4,6 +4,8 @@ import time
 import numpy as np
 import pyquaternion as pqt
 
+import omegaconf
+from networked_robotics_benchmarking.networks import ZMQ_Pair
 
 SERVER_IP = '10.42.0.67'
 SERVER_PORT = 8888
@@ -24,6 +26,7 @@ class GymFrankaServer:
 
         self.action_history = []
 
+        '''
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.settimeout(1)
         self.server_socket.bind((SERVER_IP, SERVER_PORT))
@@ -35,8 +38,12 @@ class GymFrankaServer:
                 return
             except socket.timeout:
                 pass
+        '''
+        self.net_config = omegaconf.OmegaConf.load("net_config.yaml")
+        self.network = ZMQ_Pair("server", **self.net_config)
 
     def process_request(self):
+        '''
         try:
             data = self.client_connection.recv(BUFFER_SIZE)
             if len(data) == 0:
@@ -48,6 +55,8 @@ class GymFrankaServer:
             return False
 
         data_strings = data.decode('utf8').split(' ')
+        '''
+        data_strings = self.network.recv("client").split(' ')
 
         command = data_strings[0]
         try:
@@ -60,7 +69,10 @@ class GymFrankaServer:
             print('[Gym Franka Server] Reset.')
             self.reset()
             echo_message = f'<Success> {data_strings[1]}'
-            self.client_connection.send(echo_message.encode('utf8'))
+
+            #self.client_connection.send(echo_message.encode('utf8'))
+            self.network.send("client", echo_message)
+
         elif command == '<Step-Wait>' or command == '<Step>':
             action = np.array(params[:8])
             print(f'[Gym Franka Server] Step: {list(action)}')
@@ -82,7 +94,10 @@ class GymFrankaServer:
                 echo_message = f'<Reflex> {data_strings[9]}'
             else:
                 echo_message = f'<Success> {data_strings[9]}'
-            self.client_connection.send(echo_message.encode('utf8'))
+            
+            #self.client_connection.send(echo_message.encode('utf8'))
+            self.network.send("client", echo_message)
+
         elif command == '<Grasp>':
             print(f'[Gym Franka Server] Grasp.')
             self.ros_socket.send(b'<Gripper> -1')
