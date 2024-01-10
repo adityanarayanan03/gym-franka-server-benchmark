@@ -78,7 +78,8 @@ class GymFrankaServer:
             echo_message = f'<Success> {data_strings[1]}'
 
             #self.client_connection.send(echo_message.encode('utf8'))
-            msg : Message = Message(echo_message, iter_l.log_section("server-to-client"))
+            iter_l.log_section("server-to-client", Timer)
+            msg : Message = Message(echo_message, iter_l)
             self.network.send("client", msg)
 
         elif command == '<Step-Wait>' or command == '<Step>':
@@ -104,7 +105,8 @@ class GymFrankaServer:
                 echo_message = f'<Success> {data_strings[9]}'
             
             #self.client_connection.send(echo_message.encode('utf8'))
-            msg : Message = Message(echo_message, iter_l.log_section("server-to-client"))
+            iter_l.log_section("server-to-client", Timer)
+            msg : Message = Message(echo_message, iter_l)
             self.network.send("client", msg)
 
         elif command == '<Grasp>':
