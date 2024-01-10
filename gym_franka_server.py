@@ -6,6 +6,7 @@ import pyquaternion as pqt
 
 import omegaconf
 from networked_robotics_benchmarking.networks import ZMQ_Pair
+from networked_robotics_benchmarking.metrics import Container, Value, Timer, Message
 
 SERVER_IP = '10.42.0.67'
 SERVER_PORT = 8888
@@ -56,7 +57,13 @@ class GymFrankaServer:
 
         data_strings = data.decode('utf8').split(' ')
         '''
-        data_strings = self.network.recv("client").split(' ')
+        recv_msg : Message = self.network.recv("client")
+
+        #End logging
+        recv_msg.logger.end_sub("client-to-server")
+        iter_l = recv_msg.logger
+
+        data_strings = recv_msg.data.split(' ')
 
         command = data_strings[0]
         try:
@@ -71,7 +78,8 @@ class GymFrankaServer:
             echo_message = f'<Success> {data_strings[1]}'
 
             #self.client_connection.send(echo_message.encode('utf8'))
-            self.network.send("client", echo_message)
+            msg : Message = Message(echo_message, iter_l.log_section("server-to-client"))
+            self.network.send("client", msg)
 
         elif command == '<Step-Wait>' or command == '<Step>':
             action = np.array(params[:8])
@@ -96,7 +104,8 @@ class GymFrankaServer:
                 echo_message = f'<Success> {data_strings[9]}'
             
             #self.client_connection.send(echo_message.encode('utf8'))
-            self.network.send("client", echo_message)
+            msg : Message = Message(echo_message, iter_l.log_section("server-to-client"))
+            self.network.send("client", msg)
 
         elif command == '<Grasp>':
             print(f'[Gym Franka Server] Grasp.')
